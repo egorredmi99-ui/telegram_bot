@@ -1,86 +1,86 @@
-# ========== ДЛЯ РАБОТЫ 24/7 ==========
-import os
-from keep_alive import keep_alive
-keep_alive()
-
-# ========== ВАШ ОСНОВНОЙ КОД ==========
-# ДАЛЕЕ ВСТАВЬТЕ ВЕСЬ ВАШ КОД ИЗ bot_priceoriginal.py
-# начиная от импортов и до конца# ========== ДЛЯ РАБОТЫ 24/7 ==========
-#!/usr/bin/env python3
-"""
-ТЕЛЕГРАМ БОТ С АДМИН-ПАНЕЛЬЮ - PythonAnywhere
-Файл: bot_priceoriginal.py
-Автоматическая работа 24/7 через Tasks
-"""
-
 import os
 import json
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 
-# ========== НАСТРОЙКА ЛОГИРОВАНИЯ ==========
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# ========== ДЛЯ РАБОТЫ 24/7 ==========
+from keep_alive import keep_alive
+keep_alive()
 
-# ========== ВАШ ТОКЕН ==========
-# ПОСТАВЬТЕ СВОЙ ТОКЕН ОТ @BotFather
-BOT_TOKEN = "ВАШ_ТОКЕН_ЗДЕСЬ"
+# ========== НАСТРОЙКА ==========
+logging.basicConfig(level=logging.INFO)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8523036017:AAEpFT_A9SawjpGv")
 
-# ========== ФАЙЛЫ ДЛЯ ХРАНЕНИЯ ==========
-# PythonAnywhere путь к домашней директории
-HOME_DIR = os.path.expanduser("~")
-DATA_FILE = os.path.join(HOME_DIR, "prices_data.json")
-ADMINS_FILE = os.path.join(HOME_DIR, "admins_list.json")
+# Данные
+PRICES = {
+    "accessories": {"🕶 Очки": "10,000$"},
+    "cars": {"🚗 ВАЗ": "50,000 ₽"}
+}
+ADMIN_LIST = ["egrixxx"]
 
-# ========== СПИСОК АДМИНОВ ==========
-# ЗАМЕНИТЕ "egrixxx" НА ВАШ USERNAME (без @)
-DEFAULT_ADMINS = ["egrixxx"]
+# ========== КОМАНДЫ ==========
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[InlineKeyboardButton("🏠 Имущество", callback_data='property')]]
+    await update.message.reply_text("👋 Привет!", reply_markup=InlineKeyboardMarkup(keyboard))
 
-# ========== ЗАГРУЗКА ДАННЫХ ==========
-def load_data():
-    """Загружает данные из файлов"""
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            prices = json.load(f)
-    except:
-        # Стартовые данные
-        prices = {
-            "accessories": {
-                "🕶 Очки": "10,000 - 15,000$",
-                "⌚ Часы": "20,000 - 30,000$",
-                "⛓ Цепь": "5,000 - 8,000$",
-            },
-            "cars": {
-                "🚗 ВАЗ-2106": "35,000 - 55,000 ₽",
-                "🚗 ВАЗ-2107": "40,000 - 65,000 ₽",
-                "🚗 Toyota Camry": "220,000 - 300,000 ₽",
-                "🏎 BMW 5 series": "300,000 - 400,000 ₽",
-            },
-            "skins": {
-                "🎨 Редкий скин": "500,000$",
-                "🎨 Эпический скин": "1,000,000$",
-            },
-            "houses": {
-                "🏠 Квартира": "500,000$",
-                "🏰 Особняк": "2,500,000$",
-            }
-        }
-        save_data(prices)
+async def property_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
     
-    try:
-        with open(ADMINS_FILE, 'r', encoding='utf-8') as f:
-            admins = json.load(f)
-    except:
-        admins = DEFAULT_ADMINS
-        save_admins(admins)
+    keyboard = [
+        [InlineKeyboardButton("🕶 Аксессуары", callback_data='accessories')],
+        [InlineKeyboardButton("🚗 Автомобили", callback_data='cars')],
+        [InlineKeyboardButton("⬅️ Назад", callback_data='main')]
+    ]
     
-    return prices, admins
+    # ЗДЕСЬ БЫЛА ОШИБКА - ТЕПЕРЬ ИСПРАВЛЕНО!
+    await query.edit_message_text(
+        "🏠 Имущество:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-def save_data(prices):
+async def show_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    text = f"📊 {data}:\n\n"
+    
+    for item, price in PRICES.get(data, {}).items():
+        text += f"• {item}: {price}\n"
+    
+    # ЕЩЕ ОДНО ИСПРАВЛЕНИЕ!
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Назад", callback_data='property')]])
+    )
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    
+    if data == 'main':
+        await start(update, context)
+    elif data == 'property':
+        await property_menu(update, context)
+    elif data in ['accessories', 'cars']:
+        await show_category(update, context)
+
+# ========== ЗАПУСК ==========
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    
+    print("🤖 Бот запущен!")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()def save_data(prices):
     """Сохраняет данные в файл"""
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(prices, f, ensure_ascii=False, indent=2)
